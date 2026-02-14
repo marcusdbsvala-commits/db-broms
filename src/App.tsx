@@ -164,9 +164,7 @@ function UpdatePopup({
         </div>
 
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 900 }}>
-            Ny version finns ({WHATS_NEW_VERSION})
-          </div>
+          <div style={{ fontWeight: 900 }}>Ny version finns ({WHATS_NEW_VERSION})</div>
 
           <ul
             style={{
@@ -222,13 +220,13 @@ function UpdatePopup({
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-
   const { canInstall, install } = useInstallPrompt();
 
   const [showUpdate, setShowUpdate] = useState(false);
   const [doUpdate, setDoUpdate] = useState<null | ((reload?: boolean) => Promise<void>)>(null);
 
   useEffect(() => {
+    // Theme init
     const t = getInitialTheme();
     applyTheme(t);
     setTheme(t);
@@ -239,9 +237,32 @@ export default function App() {
       onNeedRefresh() {
         setShowUpdate(true);
       },
+      onRegistered() {
+        // Android/PWA: gör en check strax efter registrering
+        setTimeout(() => updateFn(false), 1500);
+      },
     });
 
     setDoUpdate(() => updateFn);
+
+    // 🔥 Tvinga update-check när appen öppnas/får fokus
+    const check = () => updateFn(false);
+
+    window.addEventListener("focus", check);
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    // Extra: en check efter första render (hjälper på vissa Android)
+    const tId = window.setTimeout(check, 2500);
+
+    return () => {
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", onVis);
+      window.clearTimeout(tId);
+    };
   }, []);
 
   const onToggleTheme = () => {
@@ -249,7 +270,7 @@ export default function App() {
     setTheme(next);
   };
 
-  const installPopupVisible = canInstall && !showUpdate; // om båda skulle trigga, visa update först
+  const installPopupVisible = canInstall && !showUpdate; // om båda triggar: visa update först
 
   return (
     <BrowserRouter>
