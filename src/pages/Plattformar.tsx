@@ -44,6 +44,17 @@ const LOCATIONS: Location[] = [
 
         ],
     },
+    {
+        name: "Alvesta",
+        tracks: [
+            { name: "Spår 1a", lengthM: 139 },
+            { name: "Spår 1a,2", lengthM: 414, note: "känns bs" },
+            { name: "Spår 3a,3b", lengthM: 610 },
+            { name: "Spår 4a,4b", lengthM: 610 },
+
+
+        ],
+    },
 
 ];
 
