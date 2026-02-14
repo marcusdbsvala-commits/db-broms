@@ -1,0 +1,20 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Malmo",
+			"country": {
+				"code": "SE",
+				"name": "Sweden"
+			},
+			"subdivision": {
+				"code": "M",
+				"name": "Skåne County"
+			},
+			"timezone": "Europe/Stockholm",
+			"latitude": 55.6078,
+			"longitude": 12.9982,
+			"postalCode": "217 73"
+		},
+		"timestamp": 1771078221331
+	}
+}

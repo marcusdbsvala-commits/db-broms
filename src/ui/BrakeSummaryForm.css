@@ -1,0 +1,20 @@
+/* ===== BrakeSummaryForm – scoped blankett ===== */
+
+.brakeFormOuter {
+    /* LIGHT */
+    --form-paper: #ffffff;
+    --form-field: #f4f4f4;
+    --form-border: #000000;
+    --form-head: rgba(0, 0, 0, 0.06);
+    --form-shadow: 0 14px 40px rgba(0, 0, 0, .12);
+}
+
+html[data-theme="dark"] .brakeFormOuter {
+    --form-paper: #151a1f;
+    --form-field: #111010;
+    --form-border: #ff3b30;
+    /* RÖD LINJE */
+    --form-head: rgba(255, 59, 48, 0.12);
+    --form-shadow: 0 22px 70px rgba(211, 59, 59, 0.75);
+    --form-number: #f5f9ff;
+}
