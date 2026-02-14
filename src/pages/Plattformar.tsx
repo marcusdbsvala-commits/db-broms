@@ -55,6 +55,28 @@ const LOCATIONS: Location[] = [
 
         ],
     },
+    {
+        name: "Nässjö",
+        tracks: [
+            { name: "Spår 2n,2s,3n,4n,4s", lengthM: 499 },
+            { name: "Spår 5n,6s,7n,8s", lengthM: 478 },
+            { name: "Spår 9n,10n", lengthM: 310 },
+
+
+
+        ],
+    },
+    {
+        name: "Linköping",
+        tracks: [
+            { name: "Spår 1", lengthM: 371 },
+            { name: "Spår 2", lengthM: 376 },
+            { name: "Spår 3", lengthM: 376 },
+
+
+
+        ],
+    },
 
 ];
 
