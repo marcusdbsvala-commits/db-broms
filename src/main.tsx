@@ -5,8 +5,7 @@ import "./index.css";
 
 import { applyTheme, getInitialTheme } from "./theme";
 
-import { registerSW } from "virtual:pwa-register";
-registerSW({ immediate: true });
+
 
 applyTheme(getInitialTheme());
 

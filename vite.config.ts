@@ -7,10 +7,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       manifest: {
         name: "Dan Brutal",
-        short_name: "DB",
+        short_name: "DB broms",
         start_url: "/",
         display: "standalone",
         background_color: "#ffffff",
