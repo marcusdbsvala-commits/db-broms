@@ -41,17 +41,23 @@ export default function Forbattring() {
     };
 
     return (
-        <div style={{ padding: 16, maxWidth: 720, margin: "0 auto" }}>
+        <div
+            style={{
+                padding: 16,
+                maxWidth: 720,
+                margin: "0 auto",
+                boxSizing: "border-box",
+                overflowX: "hidden", // safety belt
+            }}
+        >
             <h2 style={{ margin: "6px 0 12px", fontSize: 22 }}>Förbättringsförslag</h2>
 
             <div style={{ marginBottom: 10, opacity: 0.75 }}>
                 Skriv vad du vill. Buggar, idéer, “lägg till Vectron-knapp”, allt.
             </div>
 
-            <form onSubmit={onSubmit}>
-                <label style={{ display: "block", fontWeight: 800, marginBottom: 6 }}>
-                    Meddelande
-                </label>
+            <form onSubmit={onSubmit} style={{ maxWidth: "100%" }}>
+                <label style={{ display: "block", fontWeight: 800, marginBottom: 6 }}>Meddelande</label>
 
                 <textarea
                     value={text}
@@ -61,6 +67,8 @@ export default function Forbattring() {
                     placeholder="Skriv här…"
                     style={{
                         width: "100%",
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
                         padding: 12,
                         borderRadius: 14,
                         border: "1px solid var(--border)",
@@ -72,9 +80,22 @@ export default function Forbattring() {
                     }}
                 />
 
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>{remaining} tecken kvar</div>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>Kontakt är valfritt</div>
+                <div
+                    style={{
+                        display: "flex",
+                        flexWrap: "wrap",      // ✅ låt den bryta rad
+                        gap: 8,               // ✅ snyggt på wrap
+                        justifyContent: "space-between",
+                        marginTop: 8,
+                        maxWidth: "100%",
+                    }}
+                >
+                    <div style={{ fontSize: 12, opacity: 0.7, minWidth: 0 }}>
+                        {remaining} tecken kvar
+                    </div>
+                    <div style={{ fontSize: 12, opacity: 0.7, minWidth: 0 }}>
+                        Kontakt är valfritt
+                    </div>
                 </div>
 
                 <label style={{ display: "block", fontWeight: 800, margin: "14px 0 6px" }}>
@@ -87,6 +108,8 @@ export default function Forbattring() {
                     placeholder="t.ex. mail eller telefon"
                     style={{
                         width: "100%",
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
                         padding: 12,
                         borderRadius: 14,
                         border: "1px solid var(--border)",
@@ -102,6 +125,8 @@ export default function Forbattring() {
                     style={{
                         marginTop: 14,
                         width: "100%",
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
                         padding: "12px 14px",
                         borderRadius: 14,
                         border: "1px solid rgba(255,255,255,0.12)",
