@@ -7,31 +7,57 @@ type Item = {
     imgSrc: string; // t.ex. "/atc/sida1.jpg"
 };
 
+type TextSection = {
+    title: string;
+    bullets: React.ReactNode[]; // ✅ här är grejen
+};
+
 // ✅ Fyll på här i VS Code (ingen kan redigera i appen)
-const ATC_TEXT = [
+const ATC_TEXT: TextSection[] = [
     {
         title: "Hagalund",
         bullets: [
-            " Tågfärd får utan att stanna övergå i växling vid dvsi 100, 102, 104, 106, 108, 110, 122, 124 eller 126 till Hagalund.",
-            " Tågfärd får efter att ha stannat vid So 1104 eller 1106 övergå i växling till spår 20 eller spår B1 i Hagalund.",
-            " Tågfärd får efter att ha stannat vid So 1146 eller 1148 övergå i växling till Hagalund.",
-            " Tågfärd får utan att stanna övergå i växling vid So 1276 till spår D1 och D2.",
-            " Tågfärd får efter att ha stannat övergå i växling vid msi So 1278 till spår D1.",
+            <>
+                Tågfärd får <strong>utan att stanna</strong> övergå i växling vid <strong>dvsi</strong> <strong>100</strong>, <strong>102</strong>,{" "}
+                <strong>104</strong>, <strong>106</strong>, <strong>108</strong>,{" "}
+                <strong>110</strong>, <strong>122</strong>, <strong>124</strong> eller{" "}
+                <strong>126</strong> till Hagalund.
+            </>,
+            <>
+                Tågfärd får <strong>efter att ha stannat</strong> vid <strong>So 1104 eller 1106</strong> övergå i
+                växling till <strong>spår 20</strong> eller <strong>spår B1</strong> i Hagalund.
+            </>,
+            <>
+                Tågfärd får <strong>efter att ha stannat </strong> vid <strong>So 1146 eller 1148</strong> övergå i
+                växling till Hagalund.
+            </>,
+            <>
+                Tågfärd får <strong>utan att stanna</strong> övergå i växling vid <strong>So 1276</strong>{" "}
+                till <strong>spår D1 och D2</strong>.
+            </>,
+            <>
+                Tågfärd får <strong>efter att ha stannat</strong> övergå i växling vid msi <strong>So 1278</strong>{" "}
+                till <strong>spår D1</strong>.
+            </>,
         ],
-
     },
     {
-        title: "oklart",
+        title: "Jimo",
         bullets: [
-            "tjippeli tjena",
-            "jabba dabba doo",
+            <>
+                Tågväg: <strong>1800</strong>, Bomfällning: <strong>1801</strong>
+            </>,
+            <>
+                1an (<strong>1200</strong>) Aktuell tkl, 2an (<strong>1300</strong>) Närmsta fjärr,{" "}
+                Elsymbolen (<strong>1400</strong>) aktuell eldrift, <strong>1011</strong> Drifttekniker järnväg
+            </>,
+            <>
+                <strong>1201</strong> Fjtkl Malmö C, <strong>1208</strong> Fjtkl Svågertorp - Peberholm,{" "}
+                <strong>1200</strong> Ltkl Nässjö
+            </>,
         ],
     },
 ];
-
-
-
-
 
 export default function AtcCheatSheet() {
     const items = useMemo<Item[]>(
@@ -46,6 +72,7 @@ export default function AtcCheatSheet() {
             { id: "a8", label: "Bromsprocenttabell T", imgSrc: "/atc/sida8.jpg" },
             { id: "a9", label: "Karta Bromsprocenttabell", imgSrc: "/atc/sida9.jpg" },
             { id: "a10", label: "Spårkarta Hagalund", imgSrc: "/atc/sida10.jpg" },
+            { id: "a11", label: "Spårkarta Malmö", imgSrc: "/atc/sida11.jpg" },
         ],
         []
     );
@@ -82,9 +109,7 @@ export default function AtcCheatSheet() {
                     <button
                         key={it.id}
                         onClick={() => {
-                            // om vi nyss stängde modalen: ignorera klicket
                             if (Date.now() - lastCloseMsRef.current < 350) return;
-
                             setActiveId(it.id);
                             setZoomOpen(true);
                         }}
@@ -102,7 +127,7 @@ export default function AtcCheatSheet() {
                 ))}
             </div>
 
-            {/* ✅ Textsektion längst ner (endast read-only, fylls i från koden) */}
+            {/* ✅ Textsektion längst ner */}
             <div
                 style={{
                     marginTop: 4,
@@ -114,15 +139,11 @@ export default function AtcCheatSheet() {
                     gap: 12,
                 }}
             >
-                <div style={{ fontWeight: 900 }}>
-                    Tågfärd övergång till växling
-                </div>
+                <div style={{ fontWeight: 900 }}>Lite övrigt bra att ha</div>
 
                 {ATC_TEXT.map((section, i) => (
                     <div key={i} style={{ display: "grid", gap: 6 }}>
-                        <div style={{ fontWeight: 700, opacity: 0.9 }}>
-                            {section.title}
-                        </div>
+                        <div style={{ fontWeight: 700, opacity: 0.9 }}>{section.title}</div>
 
                         <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5 }}>
                             {section.bullets.map((t, j) => (
@@ -135,11 +156,10 @@ export default function AtcCheatSheet() {
                 ))}
             </div>
 
-
             {/* Zoom-modal */}
             {zoomOpen && (
                 <div
-                    onPointerDown={(e) => closeZoomSafely(e)} // 👈 stäng tidigt, stoppar click-through
+                    onPointerDown={(e) => closeZoomSafely(e)}
                     style={{
                         position: "fixed",
                         inset: 0,
@@ -207,12 +227,8 @@ export default function AtcCheatSheet() {
                                 display: "grid",
                                 placeItems: "center",
                                 overflow: "hidden",
-
-                                // plats för header + safe area
                                 paddingTop: "max(56px, env(safe-area-inset-top))",
                                 paddingBottom: "max(16px, env(safe-area-inset-bottom))",
-
-                                // inga sidopaddings som kan klippa
                                 paddingLeft: 0,
                                 paddingRight: 0,
                             }}
@@ -222,8 +238,8 @@ export default function AtcCheatSheet() {
                                 alt={active.label}
                                 draggable={false}
                                 style={{
-                                    maxWidth: "100%", // 👈 aldrig större än containern
-                                    maxHeight: "calc(100% - 72px)", // 👈 tar hänsyn till header/safe top ungefär
+                                    maxWidth: "100%",
+                                    maxHeight: "calc(100% - 72px)",
                                     width: "auto",
                                     height: "auto",
                                     objectFit: "contain",
