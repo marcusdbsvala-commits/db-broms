@@ -313,8 +313,9 @@ export const useTrainStore = create<State>((set, get) => ({
             // Default broms på (men r7 vill du typ alltid ha av)
             const brakeEnabled = wagonTypeId === "r7" ? false : true;
 
-            // Default bromsläge EP (som du ville)
-            const brakeMode: BrakeMode = "EP";
+            // ✅ EP om vagnen har EP, annars R
+            const w = s.wagonTypes[wagonTypeId];
+            const brakeMode: BrakeMode = w && (w.epBrake ?? 0) > 0 ? "EP" : "R";
 
             // BR193 i transport: default vikt 90t via override
             const tareOverrideT = wagonTypeId === "br193" ? 90 : undefined;
@@ -332,6 +333,7 @@ export const useTrainStore = create<State>((set, get) => ({
                 ],
             };
         }),
+
 
     removeCar: (wagonTypeId) =>
         set((s) => {

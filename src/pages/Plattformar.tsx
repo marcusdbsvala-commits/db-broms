@@ -35,20 +35,20 @@ const LOCATIONS: Location[] = [
     {
         name: "Hässleholm",
         tracks: [
-            { name: "Spår 3a", lengthM: 286, note: "2,3a 286m styck. längre tåg spår 3 via spår 2" },
-            { name: "Spår 4", lengthM: 277 },
-            { name: "Spår 5", lengthM: 251 },
-            { name: "Spår 3", lengthM: 277 },
-            { name: "Spår 4", lengthM: 277 },
-            { name: "Spår 5", lengthM: 251 },
+            { name: "Spår 1a", lengthM: 285 },
+            { name: "Spår 1b", lengthM: 160 },
+            { name: "Spår 3a", lengthM: 286, note: "längre tåg via spår 2 som är 218m" },
+            { name: "Spår 4b", lengthM: 232, note: "längre tåg via spår 5. Oklar längd. minst 160m" },
+            { name: "Spår 6b", lengthM: 232, note: "ingen längd på 6a. men minst 160m" },
+            { name: "Spår 7", lengthM: 0, note: "Förmodligen som spår 6." },
 
         ],
     },
     {
         name: "Alvesta",
         tracks: [
-            { name: "Spår 1a", lengthM: 139 },
-            { name: "Spår 1a,2", lengthM: 414, note: "känns bs" },
+            { name: "Spår 1", lengthM: 414 },
+            { name: "Spår 2", lengthM: 414 },
             { name: "Spår 3a,3b", lengthM: 610 },
             { name: "Spår 4a,4b", lengthM: 610 },
 

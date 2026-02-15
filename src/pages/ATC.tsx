@@ -7,6 +7,32 @@ type Item = {
     imgSrc: string; // t.ex. "/atc/sida1.jpg"
 };
 
+// ✅ Fyll på här i VS Code (ingen kan redigera i appen)
+const ATC_TEXT = [
+    {
+        title: "Hagalund",
+        bullets: [
+            " Tågfärd får utan att stanna övergå i växling vid dvsi 100, 102, 104, 106, 108, 110, 122, 124 eller 126 till Hagalund.",
+            " Tågfärd får efter att ha stannat vid So 1104 eller 1106 övergå i växling till spår 20 eller spår B1 i Hagalund.",
+            " Tågfärd får efter att ha stannat vid So 1146 eller 1148 övergå i växling till Hagalund.",
+            " Tågfärd får utan att stanna övergå i växling vid So 1276 till spår D1 och D2.",
+            " Tågfärd får efter att ha stannat övergå i växling vid msi So 1278 till spår D1.",
+        ],
+
+    },
+    {
+        title: "oklart",
+        bullets: [
+            "tjippeli tjena",
+            "jabba dabba doo",
+        ],
+    },
+];
+
+
+
+
+
 export default function AtcCheatSheet() {
     const items = useMemo<Item[]>(
         () => [
@@ -19,6 +45,7 @@ export default function AtcCheatSheet() {
             { id: "a7", label: "Bromsprocenttabell U", imgSrc: "/atc/sida7.jpg" },
             { id: "a8", label: "Bromsprocenttabell T", imgSrc: "/atc/sida8.jpg" },
             { id: "a9", label: "Karta Bromsprocenttabell", imgSrc: "/atc/sida9.jpg" },
+            { id: "a10", label: "Spårkarta Hagalund", imgSrc: "/atc/sida10.jpg" },
         ],
         []
     );
@@ -74,6 +101,40 @@ export default function AtcCheatSheet() {
                     </button>
                 ))}
             </div>
+
+            {/* ✅ Textsektion längst ner (endast read-only, fylls i från koden) */}
+            <div
+                style={{
+                    marginTop: 4,
+                    padding: 14,
+                    borderRadius: 14,
+                    border: "1px solid var(--border)",
+                    background: "var(--card)",
+                    display: "grid",
+                    gap: 12,
+                }}
+            >
+                <div style={{ fontWeight: 900 }}>
+                    Tågfärd övergång till växling
+                </div>
+
+                {ATC_TEXT.map((section, i) => (
+                    <div key={i} style={{ display: "grid", gap: 6 }}>
+                        <div style={{ fontWeight: 700, opacity: 0.9 }}>
+                            {section.title}
+                        </div>
+
+                        <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5 }}>
+                            {section.bullets.map((t, j) => (
+                                <li key={j} style={{ fontSize: 14 }}>
+                                    {t}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+
 
             {/* Zoom-modal */}
             {zoomOpen && (

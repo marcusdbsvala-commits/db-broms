@@ -14,6 +14,8 @@ import { applyTheme, getInitialTheme, toggleTheme } from "./theme";
 import { useInstallPrompt } from "./hooks/useInstallPrompt";
 import { WHATS_NEW, WHATS_NEW_VERSION } from "./whatsNew";
 
+/* ================= NAV ================= */
+
 const navWrapStyle: React.CSSProperties = {
   position: "fixed",
   left: 0,
@@ -56,71 +58,23 @@ const iconBtnStyle: React.CSSProperties = {
 
 function ThemeToggleBtn({ theme, onToggle }: { theme: "light" | "dark"; onToggle: () => void }) {
   return (
-    <button type="button" onClick={onToggle} style={iconBtnStyle} aria-label="Växla tema" title="Växla tema">
+    <button type="button" onClick={onToggle} style={iconBtnStyle}>
       {theme === "dark" ? "☀️" : "🌙"}
     </button>
   );
 }
 
+/* ================= INSTALL ================= */
+
 function InstallPopup({ onInstall }: { onInstall: () => void }) {
   return (
-    <div
-      style={{
-        position: "fixed",
-        left: 12,
-        right: 12,
-        bottom: 78,
-        padding: 14,
-        borderRadius: 18,
-        background: "linear-gradient(135deg, #0b0b0c, #1a1a1d)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
-        zIndex: 2000,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: "linear-gradient(135deg, #ff2337, #8b0000)",
-            display: "grid",
-            placeItems: "center",
-            fontWeight: 900,
-            color: "white",
-            boxShadow: "0 0 10px rgba(255,35,55,0.6)",
-            flex: "0 0 auto",
-          }}
-        >
-          🚂
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 900, color: "white" }}>Installera DB Broms</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
-            Offline i tunnlar. Snabbare start. Mindre stress.
-          </div>
-        </div>
-
-        <button
-          onClick={onInstall}
-          style={{
-            border: "none",
-            padding: "10px 14px",
-            borderRadius: 12,
-            background: "#ff2337",
-            color: "white",
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
-          Installera
-        </button>
-      </div>
+    <div style={{ position: "fixed", left: 12, right: 12, bottom: 78, zIndex: 2000 }}>
+      <button onClick={onInstall}>Installera</button>
     </div>
   );
 }
+
+/* ================= UPDATE ================= */
 
 function UpdatePopup({
   onLater,
@@ -138,129 +92,65 @@ function UpdatePopup({
         bottom: 78,
         padding: 14,
         borderRadius: 18,
-        background: "linear-gradient(135deg, #0b0b0c, #1a1a1d)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
+        background: "#111",
         zIndex: 2500,
         color: "white",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: "linear-gradient(135deg, #ff2337, #8b0000)",
-            display: "grid",
-            placeItems: "center",
-            fontWeight: 900,
-            color: "white",
-            boxShadow: "0 0 10px rgba(255,35,55,0.6)",
-            flex: "0 0 auto",
-          }}
-        >
-          ⬆️
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 900 }}>Ny version finns ({WHATS_NEW_VERSION})</div>
-
-          <ul
-            style={{
-              margin: "6px 0 0",
-              paddingLeft: 18,
-              color: "rgba(255,255,255,0.8)",
-              fontSize: 13,
-            }}
-          >
-            {WHATS_NEW.slice(0, 3).map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        </div>
+      <div style={{ fontWeight: 900 }}>
+        Ny version finns ({WHATS_NEW_VERSION})
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        <button
-          onClick={onLater}
-          style={{
-            flex: 1,
-            padding: "10px 12px",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.16)",
-            background: "transparent",
-            color: "white",
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
-          Senare
-        </button>
+      <ul style={{ marginTop: 6 }}>
+        {WHATS_NEW.slice(0, 3).map((x) => (
+          <li key={x}>{x}</li>
+        ))}
+      </ul>
 
-        <button
-          onClick={onUpdateNow}
-          style={{
-            flex: 1,
-            padding: "10px 12px",
-            borderRadius: 12,
-            border: "none",
-            background: "#ff2337",
-            color: "white",
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
-          Uppdatera nu
-        </button>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={onLater}>Senare</button>
+        <button onClick={onUpdateNow}>Uppdatera nu</button>
       </div>
     </div>
   );
 }
+
+/* ================= APP ================= */
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const { canInstall, install } = useInstallPrompt();
 
   const [showUpdate, setShowUpdate] = useState(false);
-  const [doUpdate, setDoUpdate] = useState<null | ((reload?: boolean) => Promise<void>)>(null);
+  const [doUpdate, setDoUpdate] =
+    useState<null | ((reload?: boolean) => Promise<void>)>(null);
 
   useEffect(() => {
-    // Theme init
+    /* THEME */
     const t = getInitialTheme();
     applyTheme(t);
     setTheme(t);
 
-    // PWA update handling (requires registerType: "prompt" in vite.config.ts)
+    /* ===== PWA UPDATE ===== */
     const updateFn = registerSW({
-      immediate: true,
+      // 🔥 viktigast: INTE immediate
+      immediate: false,
+
       onNeedRefresh() {
         setShowUpdate(true);
-      },
-      onRegistered() {
-        // Android/PWA: gör en check strax efter registrering
-        setTimeout(() => updateFn(false), 1500);
       },
     });
 
     setDoUpdate(() => updateFn);
 
-    // 🔥 Tvinga update-check när appen öppnas/får fokus
-    const check = () => updateFn(false);
+    // Checka efter update lugnt (utan reload)
+    const checkForUpdates = () => updateFn(false);
 
-    window.addEventListener("focus", check);
-
-    const onVis = () => {
-      if (document.visibilityState === "visible") check();
-    };
-    document.addEventListener("visibilitychange", onVis);
-
-    // Extra: en check efter första render (hjälper på vissa Android)
-    const tId = window.setTimeout(check, 2500);
+    const tId = window.setTimeout(checkForUpdates, 2000);
+    window.addEventListener("focus", checkForUpdates);
 
     return () => {
-      window.removeEventListener("focus", check);
-      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", checkForUpdates);
       window.clearTimeout(tId);
     };
   }, []);
@@ -270,7 +160,7 @@ export default function App() {
     setTheme(next);
   };
 
-  const installPopupVisible = canInstall && !showUpdate; // om båda triggar: visa update först
+  const installPopupVisible = canInstall && !showUpdate;
 
   return (
     <BrowserRouter>
@@ -287,20 +177,21 @@ export default function App() {
         </Routes>
       </div>
 
-      {/* 🔥 Update popup */}
+      {/* UPDATE */}
       {showUpdate && (
         <UpdatePopup
           onLater={() => setShowUpdate(false)}
           onUpdateNow={async () => {
-            await doUpdate?.(true); // aktivera nya SW + reload
+            if (!doUpdate) return;
+            await doUpdate(true);
           }}
         />
       )}
 
-      {/* 🔥 Install popup */}
+      {/* INSTALL */}
       {installPopupVisible && <InstallPopup onInstall={install} />}
 
-      {/* Bottom nav */}
+      {/* NAV */}
       <div style={navWrapStyle}>
         <NavLink to="/" style={navLinkStyle} end>
           Broms
