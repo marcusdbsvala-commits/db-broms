@@ -9,32 +9,52 @@ export function getInitialTheme(): "light" | "dark" {
         : "light";
 }
 
-function setThemeColorFromCssVar() {
-    let metaTheme = document.querySelector(
-        'meta[name="theme-color"]'
-    ) as HTMLMetaElement | null;
-
-    if (!metaTheme) {
-        metaTheme = document.createElement("meta");
-        metaTheme.name = "theme-color";
-        document.head.appendChild(metaTheme);
-    }
-
-    const bg = getComputedStyle(document.documentElement)
-        .getPropertyValue("--bg")
+function readCssVar(name: string) {
+    const htmlVal = getComputedStyle(document.documentElement)
+        .getPropertyValue(name)
         .trim();
+    if (htmlVal) return htmlVal;
 
-    metaTheme.content = bg || "#0b0b0b";
+    const bodyVal = document.body
+        ? getComputedStyle(document.body).getPropertyValue(name).trim()
+        : "";
+    if (bodyVal) return bodyVal;
+
+    return "";
+}
+
+function ensureThemeColorMeta() {
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+        meta = document.createElement("meta");
+        meta.name = "theme-color";
+        document.head.appendChild(meta);
+    }
+    return meta;
+}
+
+function setThemeColorFromBg() {
+    const meta = ensureThemeColorMeta();
+
+    const bgVar = readCssVar("--bg");
+
+    // Om --bg inte finns (eller är tom), ta faktisk bakgrundsfärg
+    const fallbackBg =
+        getComputedStyle(document.body || document.documentElement).backgroundColor || "#0b0b0b";
+
+    // Om din --bg är typ "#0b0b0b" funkar den direkt. Om den är tom → fallback.
+    meta.content = bgVar || fallbackBg;
 }
 
 export function applyTheme(theme: "light" | "dark") {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(KEY, theme);
 
-    // 🔥 matcha notishyllan/statusbaren med --bg
-    setThemeColorFromCssVar();
+    // Vänta en frame så CSS variablerna hinner uppdateras efter dataset-byten
+    requestAnimationFrame(() => {
+        setThemeColorFromBg();
+    });
 
-    // 🔥 notify app
     window.dispatchEvent(new CustomEvent("themechange", { detail: theme }));
 }
 
