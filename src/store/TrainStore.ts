@@ -100,6 +100,34 @@ export type TrainPreset = {
     snapshot: TrainSnapshot;
 };
 
+/* =========================
+   Share / Export-Import
+========================= */
+
+export type SharePayloadV1 = {
+    v: 1;
+    preset: TrainPreset;
+};
+
+function encodeSharePayload(payload: SharePayloadV1): string {
+    const json = JSON.stringify(payload);
+    const bytes = new TextEncoder().encode(json);
+    let bin = "";
+    bytes.forEach((b) => (bin += String.fromCharCode(b)));
+    return btoa(bin);
+}
+
+function decodeSharePayload(code: string): SharePayloadV1 {
+    const bin = atob(code.trim());
+    const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    return JSON.parse(json) as SharePayloadV1;
+}
+
+/* =========================
+   LocalStorage helpers
+========================= */
+
 const PRESETS_KEY = "broms_pwa_presets_v1";
 const LAST_KEY = "broms_pwa_last_train_v1";
 
@@ -187,6 +215,10 @@ type State = {
     deletePreset: (presetId: string) => void;
     renamePreset: (presetId: string, name: string) => void;
     clearPresets: () => void;
+
+    // ✅ Export / Import
+    exportPresetCode: (presetId: string) => string | null;
+    importPresetCode: (code: string) => { ok: true; id: string } | { ok: false; error: string };
 };
 
 function makeSnapshot(s: Pick<State, "selectedLocId" | "locBrakeMode" | "cars">): TrainSnapshot {
@@ -197,7 +229,6 @@ function makeSnapshot(s: Pick<State, "selectedLocId" | "locBrakeMode" | "cars">)
     };
 }
 
-// hjälper oss autospara "senaste" efter stateändringar
 function persistLastFromState(s: Pick<State, "selectedLocId" | "locBrakeMode" | "cars">) {
     saveLastToStorage(makeSnapshot(s));
 }
@@ -407,7 +438,7 @@ export const useTrainStore = create<State>((set, get) => ({
             id: "br193",
             name: "BR193 (i transport)",
             lengthM: 19,
-            tareT: 95, // katalogvärde, men instanser defaultar till 90 via tareOverrideT
+            tareT: 95,
             brakeP: 95,
             brakeR: 135,
             epBrake: 135,
@@ -429,12 +460,9 @@ export const useTrainStore = create<State>((set, get) => ({
         },
     },
 
-    // ✅ laddar "senaste tåget" om det finns
     selectedLocId: last?.selectedLocId ?? null,
     locBrakeMode: last?.locBrakeMode ?? "EP",
     cars: last?.cars ?? [],
-
-    // ✅ presets
     presets: loadPresetsFromStorage(),
 
     setSelectedLoc: (locId) =>
@@ -475,10 +503,7 @@ export const useTrainStore = create<State>((set, get) => ({
             const w = s.wagonTypes[wagonTypeId];
             const brakeMode: BrakeMode = w && (w.epBrake ?? 0) > 0 ? "EP" : "R";
 
-            // BR193 i transport: default vikt 90t via override
             const tareOverrideT = wagonTypeId === "br193" ? 90 : undefined;
-
-            // ✅ Bpmmz: defaulta till första unit (smidigt för test)
             const defaultUnit = wagonTypeId === "bpmmz" ? BPMMZ_UNITS[0] : undefined;
 
             const newCar: TrainCar = {
@@ -486,9 +511,7 @@ export const useTrainStore = create<State>((set, get) => ({
                 wagonTypeId,
                 brakeEnabled,
                 brakeMode,
-
                 tareOverrideT: defaultUnit?.tareT ?? tareOverrideT,
-
                 unitId: defaultUnit?.id,
                 brakeOverrideP: defaultUnit?.brakeP,
                 brakeOverrideR: defaultUnit?.brakeR,
@@ -547,7 +570,6 @@ export const useTrainStore = create<State>((set, get) => ({
             return { cars };
         }),
 
-    // ✅ Bpmmz
     getBpmmzUnits: () => BPMMZ_UNITS,
 
     setCarUnitId: (carId, unitId) =>
@@ -555,7 +577,6 @@ export const useTrainStore = create<State>((set, get) => ({
             const car = s.cars.find((c) => c.id === carId);
             if (!car) return s;
 
-            // special logic för Bpmmz
             if (car.wagonTypeId !== "bpmmz") {
                 const cars = s.cars.map((c) => (c.id === carId ? { ...c, unitId: unitId ?? undefined } : c));
                 const next = { ...s, cars };
@@ -575,7 +596,6 @@ export const useTrainStore = create<State>((set, get) => ({
                         brakeOverrideP: undefined,
                         brakeOverrideR: undefined,
                         brakeOverrideEP: undefined,
-                        // tareOverrideT: undefined, // avkommentera om du vill rensa vikt också
                     };
                 }
 
@@ -600,7 +620,6 @@ export const useTrainStore = create<State>((set, get) => ({
         return u?.label ?? null;
     },
 
-    // ✅ Presets actions
     savePreset: (name) =>
         set((s) => {
             const preset: TrainPreset = {
@@ -646,10 +665,52 @@ export const useTrainStore = create<State>((set, get) => ({
         }),
 
     clearPresets: () =>
-        set((s) => {
+        set(() => {
             savePresetsToStorage([]);
             return { presets: [] };
         }),
+
+    // ✅ Export / Import
+    exportPresetCode: (presetId) => {
+        const s = get();
+        const p = s.presets.find((x) => x.id === presetId);
+        if (!p) return null;
+
+        const payload: SharePayloadV1 = { v: 1, preset: p };
+        return encodeSharePayload(payload);
+    },
+
+    importPresetCode: (code) => {
+        try {
+            const payload = decodeSharePayload(code);
+
+            if (!payload || payload.v !== 1 || !payload.preset) {
+                return { ok: false as const, error: "Ogiltig kod (fel format)." };
+            }
+
+            const incoming = payload.preset;
+
+            const cleaned: TrainPreset = {
+                ...incoming,
+                id: incoming.id || crypto.randomUUID(),
+                createdAt: incoming.createdAt || Date.now(),
+                name: (incoming.name || "").trim() || `Import ${new Date().toLocaleString("sv-SE")}`,
+            };
+
+            set((s) => {
+                const exists = s.presets.some((p) => p.id === cleaned.id);
+                const finalPreset = exists ? { ...cleaned, id: crypto.randomUUID() } : cleaned;
+                const presets = [finalPreset, ...s.presets];
+                savePresetsToStorage(presets);
+                return { presets };
+            });
+
+            const newest = get().presets[0];
+            return { ok: true as const, id: newest.id };
+        } catch {
+            return { ok: false as const, error: "Kunde inte läsa koden. (Fel/trasig kod)" };
+        }
+    },
 }));
 
 /* =========================
@@ -720,7 +781,6 @@ export function calcTotals() {
         hasActiveLoc: !!loc,
         activeLocName: loc?.name ?? null,
 
-        // för blankett/UI
         locBrakeSelected,
         locBrakeMode,
     };

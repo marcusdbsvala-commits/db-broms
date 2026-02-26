@@ -9,6 +9,16 @@ function calcBrakePercentSelected(totalBrakeT: number, totalWeightT: number) {
     return { brake, weight, percent };
 }
 
+async function copyToClipboardOrPrompt(label: string, text: string) {
+    try {
+        await navigator.clipboard.writeText(text);
+        alert(`${label} kopierad! Skicka den till kollegan.`);
+    } catch {
+        // fallback om clipboard blockas (t.ex. i vissa webviews)
+        prompt(`${label} (kopiera manuellt):`, text);
+    }
+}
+
 export default function Broms() {
     const wagonTypes = useTrainStore((s) => s.wagonTypes);
     const locTypes = useTrainStore((s) => s.locTypes);
@@ -39,6 +49,10 @@ export default function Broms() {
     const deletePreset = useTrainStore((s) => s.deletePreset);
     const renamePreset = useTrainStore((s) => s.renamePreset);
     const clearPresets = useTrainStore((s) => s.clearPresets);
+
+    // ✅ Export / Import
+    const exportPresetCode = useTrainStore((s) => s.exportPresetCode);
+    const importPresetCode = useTrainStore((s) => s.importPresetCode);
 
     const totals = calcTotals();
     const bp = calcBrakePercentSelected(totals.totalBrakeT, totals.totalWeightT);
@@ -78,11 +92,7 @@ export default function Broms() {
     const locoOptions = Object.values(locTypes);
 
     // ✅ Presets UI state
-    const presetOptions = useMemo(
-        () =>
-            [...presets].sort((a, b) => b.createdAt - a.createdAt),
-        [presets]
-    );
+    const presetOptions = useMemo(() => [...presets].sort((a, b) => b.createdAt - a.createdAt), [presets]);
     const [selectedPresetId, setSelectedPresetId] = useState("");
 
     return (
@@ -234,6 +244,59 @@ export default function Broms() {
                         >
                             Rensa alla
                         </button>
+
+                        {/* ✅ Export / Import */}
+                        <button
+                            disabled={!selectedPresetId}
+                            onClick={async () => {
+                                if (!selectedPresetId) return;
+                                const code = exportPresetCode(selectedPresetId);
+                                if (!code) return alert("Hittar inte presetet.");
+
+                                await copyToClipboardOrPrompt("Exportkod", code);
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                            title="Kopiera kod och skicka till kollega"
+                        >
+                            Export
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const code = prompt("Klistra in exportkod:");
+                                if (!code) return;
+
+                                const res = importPresetCode(code);
+                                if (!res.ok) {
+                                    alert(res.error);
+                                    return;
+                                }
+
+                                // välj den importerade direkt i dropdown
+                                setSelectedPresetId(res.id);
+                                alert("Importerat! Presetet ligger nu under sparade tåg.");
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                            title="Importera kod från kollega"
+                        >
+                            Import
+                        </button>
                     </div>
 
                     <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>
@@ -380,7 +443,6 @@ export default function Broms() {
 
                             const tareThis = car.tareOverrideT ?? w.tareT;
 
-                            // ✅ använder override-värden om de finns (t.ex. Bpmmz individ)
                             const selectedBrakeThisCar = car.brakeEnabled
                                 ? car.brakeMode === "P"
                                     ? (car.brakeOverrideP ?? w.brakeP)
