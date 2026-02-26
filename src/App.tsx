@@ -309,9 +309,9 @@ export default function App() {
         <NavLink to="/ATC" style={navLinkStyle}>
           ATC
         </NavLink>
-        <NavLink to="/plattformar" style={navLinkStyle}>
+        {/*<NavLink to="/plattformar" style={navLinkStyle}>
           Plattformar
-        </NavLink>
+        </NavLink> */}
         <NavLink to="/lok" style={navLinkStyle}>
           Lok
         </NavLink>

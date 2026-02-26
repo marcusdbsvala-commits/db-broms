@@ -45,26 +45,13 @@ export default function Lok() {
         []
     );
 
-    // Dina extra-bilder kan ligga kvar i public/ som innan
-    const extraItems = useMemo<DocItem[]>(
-        () => [
-            { id: "e1", label: "Extra 1", src: "/lokimg/extra1.jpg", kind: "image" },
-            { id: "e2", label: "Extra 2", src: "/lokimg/extra2.jpg", kind: "image" },
-            { id: "e3", label: "Extra 3", src: "/lokimg/extra3.jpg", kind: "image" },
-            { id: "e4", label: "Extra 4", src: "/lokimg/extra4.jpg", kind: "image" },
-            { id: "e5", label: "Extra 5", src: "/lokimg/extra5.jpg", kind: "image" },
-            { id: "e6", label: "Extra 6", src: "/lokimg/extra6.jpg", kind: "image" },
-            { id: "e7", label: "Extra 7", src: "/lokimg/extra7.jpg", kind: "image" },
-            { id: "e8", label: "Extra 8", src: "/lokimg/extra8.jpg", kind: "image" },
-            { id: "e9", label: "Extra 9", src: "/lokimg/extra9.jpg", kind: "image" },
-            { id: "e10", label: "Extra 10", src: "/lokimg/extra10.jpg", kind: "image" },
-        ],
-        []
-    );
+    // ✅ Extra är tillfälligt avstängt (behåll strukturen men visa inget)
+    const extraItems = useMemo<DocItem[]>(() => [], []);
 
     const allItems = useMemo(() => [...pdfItems, ...extraItems], [pdfItems, extraItems]);
 
-    const [activeId, setActiveId] = useState(allItems[0]?.id ?? "");
+    // ✅ starta alltid på första PDF så UI aldrig hamnar i "Ingen vald"
+    const [activeId, setActiveId] = useState(pdfItems[0]?.id ?? "");
     const active = allItems.find((x) => x.id === activeId);
 
     return (
@@ -102,36 +89,41 @@ export default function Lok() {
                 })}
             </div>
 
-            <div style={{ marginBottom: 10, fontWeight: 700 }}>Extra</div>
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: 10,
-                    marginBottom: 16,
-                }}
-            >
-                {extraItems.map((it) => {
-                    const isActive = it.id === activeId;
-                    return (
-                        <button
-                            key={it.id}
-                            onClick={() => setActiveId(it.id)}
-                            style={{
-                                padding: "10px 12px",
-                                borderRadius: 12,
-                                border: "1px solid #ddd",
-                                background: isActive ? "#000000" : "var(--bg)",
-                                color: isActive ? "#fff" : "var(--text)",
-                                fontWeight: 600,
-                                cursor: "pointer",
-                            }}
-                        >
-                            {it.label}
-                        </button>
-                    );
-                })}
-            </div>
+            {/* ✅ Extra-sektionen renderas bara om det faktiskt finns något */}
+            {extraItems.length > 0 && (
+                <>
+                    <div style={{ marginBottom: 10, fontWeight: 700 }}>Extra</div>
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                            gap: 10,
+                            marginBottom: 16,
+                        }}
+                    >
+                        {extraItems.map((it) => {
+                            const isActive = it.id === activeId;
+                            return (
+                                <button
+                                    key={it.id}
+                                    onClick={() => setActiveId(it.id)}
+                                    style={{
+                                        padding: "10px 12px",
+                                        borderRadius: 12,
+                                        border: "1px solid #ddd",
+                                        background: isActive ? "#000000" : "var(--bg)",
+                                        color: isActive ? "#fff" : "var(--text)",
+                                        fontWeight: 600,
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    {it.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </>
+            )}
 
             <div
                 style={{

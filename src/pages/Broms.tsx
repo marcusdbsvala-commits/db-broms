@@ -27,6 +27,10 @@ export default function Broms() {
     const setCarBrakeEnabled = useTrainStore((s) => s.setCarBrakeEnabled);
     const setCarTareOverride = useTrainStore((s) => s.setCarTareOverride);
 
+    // ✅ Bpmmz
+    const setCarUnitId = useTrainStore((s) => s.setCarUnitId);
+    const getBpmmzUnits = useTrainStore((s) => s.getBpmmzUnits);
+
     const totals = calcTotals();
     const bp = calcBrakePercentSelected(totals.totalBrakeT, totals.totalWeightT);
 
@@ -227,14 +231,14 @@ export default function Broms() {
 
                             const tareThis = car.tareOverrideT ?? w.tareT;
 
-                            const selectedBrakeThisCar =
-                                car.brakeEnabled
-                                    ? car.brakeMode === "P"
-                                        ? w.brakeP
-                                        : car.brakeMode === "R"
-                                            ? w.brakeR
-                                            : (w.epBrake ?? 0)
-                                    : 0;
+                            // ✅ använder override-värden om de finns (t.ex. Bpmmz individ)
+                            const selectedBrakeThisCar = car.brakeEnabled
+                                ? car.brakeMode === "P"
+                                    ? (car.brakeOverrideP ?? w.brakeP)
+                                    : car.brakeMode === "R"
+                                        ? (car.brakeOverrideR ?? w.brakeR)
+                                        : (car.brakeOverrideEP ?? (w.epBrake ?? 0))
+                                : 0;
 
                             return (
                                 <div
@@ -269,6 +273,29 @@ export default function Broms() {
                                             >
                                                 <option value="90">90 t</option>
                                                 <option value="95">95 t</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {/* ✅ Bara för Bpmmz: individval */}
+                                    {car.wagonTypeId === "bpmmz" && (
+                                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                            <div style={{ fontSize: 12, opacity: 0.75, fontWeight: 700 }}>Individ:</div>
+
+                                            <select
+                                                value={car.unitId ?? ""}
+                                                onChange={(e) => setCarUnitId(car.id, e.target.value || null)}
+                                                style={{ padding: "8px 10px", borderRadius: 10, border: "2px solid #000", fontWeight: 800 }}
+                                            >
+                                                <option value="" disabled>
+                                                    Välj nr
+                                                </option>
+
+                                                {getBpmmzUnits().map((u) => (
+                                                    <option key={u.id} value={u.id}>
+                                                        {u.label}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
                                     )}

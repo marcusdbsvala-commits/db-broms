@@ -1,5 +1,9 @@
 import { create } from "zustand";
 
+/* =========================
+   Types
+========================= */
+
 export type WagonType = {
     id: string;
     name: string;
@@ -26,7 +30,43 @@ export type LocType = {
 
 export type BrakeMode = "P" | "R" | "EP";
 
-// En instans i tåget (per vagn)
+/* =========================
+   Bpmmz individer
+   (fyller broms + vikt här)
+========================= */
+
+export type BpmmzUnit = {
+    id: string;
+    label: string;
+    brakeP: number;
+    brakeR: number;
+    epBrake?: number;
+    tareT?: number;
+};
+
+export const BPMMZ_UNITS: BpmmzUnit[] = [
+    { id: "90100", label: "90100", brakeP: 52, brakeR: 68, epBrake: 73, tareT: 50 },
+    { id: "90101", label: "90101", brakeP: 54, brakeR: 71, epBrake: 76, tareT: 51 },
+    { id: "90102", label: "90102", brakeP: 52, brakeR: 68, epBrake: 73, tareT: 50 },
+    { id: "90103", label: "90103", brakeP: 54, brakeR: 71, epBrake: 76, tareT: 50 },
+    { id: "90104", label: "90104", brakeP: 52, brakeR: 68, epBrake: 73, tareT: 50 },
+    { id: "90105", label: "90105", brakeP: 52, brakeR: 68, epBrake: 73, tareT: 50 },
+    { id: "90106", label: "90106", brakeP: 52, brakeR: 68, epBrake: 73, tareT: 50 },
+    { id: "90107", label: "90107", brakeP: 54, brakeR: 71, epBrake: 76, tareT: 50 },
+    { id: "90108", label: "90108", brakeP: 52, brakeR: 68, epBrake: 73, tareT: 50 },
+    { id: "90109", label: "90109", brakeP: 54, brakeR: 71, epBrake: 76, tareT: 50 },
+    { id: "90110", label: "90110", brakeP: 54, brakeR: 71, epBrake: 76, tareT: 51 },
+];
+
+function findBpmmzUnit(unitId?: string) {
+    if (!unitId) return undefined;
+    return BPMMZ_UNITS.find((u) => u.id === unitId);
+}
+
+/* =========================
+   Train instance (per vagn)
+========================= */
+
 export type TrainCar = {
     id: string;
     wagonTypeId: string;
@@ -36,7 +76,17 @@ export type TrainCar = {
 
     // valfri vikt-override (t.ex. BR193 i transport 90/95)
     tareOverrideT?: number;
+
+    // ✅ Bpmmz: individ + broms overrides (på instansnivå)
+    unitId?: string;
+    brakeOverrideP?: number;
+    brakeOverrideR?: number;
+    brakeOverrideEP?: number;
 };
+
+/* =========================
+   Store
+========================= */
 
 type State = {
     wagonTypes: Record<string, WagonType>;
@@ -69,6 +119,13 @@ type State = {
 
     // Vikt override per instans
     setCarTareOverride: (carId: string, tareT: number | null) => void;
+
+    // ✅ Bpmmz
+    getBpmmzUnits: () => BpmmzUnit[];
+    setCarUnitId: (carId: string, unitId: string | null) => void;
+
+    // (Nice för UI)
+    getCarBpmmzUnitLabel: (car: TrainCar) => string | null;
 };
 
 export const useTrainStore = create<State>((set, get) => ({
@@ -217,6 +274,21 @@ export const useTrainStore = create<State>((set, get) => ({
             axles: 4,
             maxSpeed: 200,
         },
+
+        // ✅ Bpmmz - grund
+        bpmmz: {
+            id: "bpmmz",
+            name: "Bpmmz",
+            lengthM: 26.4,
+            tareT: 50,
+            brakeP: 52,
+            brakeR: 68,
+            epBrake: 73,
+            hasBlockBrake: false,
+            axles: 4,
+            maxSpeed: 200,
+        },
+
         bvcmz: {
             id: "bvcmz",
             name: "Bvcmz",
@@ -282,15 +354,12 @@ export const useTrainStore = create<State>((set, get) => ({
     },
 
     selectedLocId: null,
-
-    // default lok-bromsläge (du ville EP default)
     locBrakeMode: "EP",
 
     cars: [],
 
     setSelectedLoc: (locId) => set({ selectedLocId: locId }),
     setLocBrakeMode: (mode) => set({ locBrakeMode: mode }),
-
     getLocOptions: () => Object.values(get().locTypes),
 
     upsertWagonType: (w) =>
@@ -310,15 +379,16 @@ export const useTrainStore = create<State>((set, get) => ({
 
     addCar: (wagonTypeId) =>
         set((s) => {
-            // Default broms på (men r7 vill du typ alltid ha av)
             const brakeEnabled = wagonTypeId === "r7" ? false : true;
 
-            // ✅ EP om vagnen har EP, annars R
             const w = s.wagonTypes[wagonTypeId];
             const brakeMode: BrakeMode = w && (w.epBrake ?? 0) > 0 ? "EP" : "R";
 
             // BR193 i transport: default vikt 90t via override
             const tareOverrideT = wagonTypeId === "br193" ? 90 : undefined;
+
+            // ✅ Bpmmz: defaulta till första unit (smidigt för test)
+            const defaultUnit = wagonTypeId === "bpmmz" ? BPMMZ_UNITS[0] : undefined;
 
             return {
                 cars: [
@@ -328,12 +398,17 @@ export const useTrainStore = create<State>((set, get) => ({
                         wagonTypeId,
                         brakeEnabled,
                         brakeMode,
-                        tareOverrideT,
+
+                        tareOverrideT: defaultUnit?.tareT ?? tareOverrideT,
+
+                        unitId: defaultUnit?.id,
+                        brakeOverrideP: defaultUnit?.brakeP,
+                        brakeOverrideR: defaultUnit?.brakeR,
+                        brakeOverrideEP: defaultUnit?.epBrake ?? (defaultUnit ? 0 : undefined),
                     },
                 ],
             };
         }),
-
 
     removeCar: (wagonTypeId) =>
         set((s) => {
@@ -366,9 +441,65 @@ export const useTrainStore = create<State>((set, get) => ({
                 c.id === carId ? { ...c, tareOverrideT: tareT === null ? undefined : tareT } : c
             ),
         })),
+
+    // ✅ Bpmmz
+    getBpmmzUnits: () => BPMMZ_UNITS,
+
+    setCarUnitId: (carId, unitId) =>
+        set((s) => {
+            const car = s.cars.find((c) => c.id === carId);
+            if (!car) return s;
+
+            // Just nu gör vi bara “special logic” för Bpmmz
+            if (car.wagonTypeId !== "bpmmz") {
+                return {
+                    cars: s.cars.map((c) =>
+                        c.id === carId ? { ...c, unitId: unitId ?? undefined } : c
+                    ),
+                };
+            }
+
+            const u = unitId ? BPMMZ_UNITS.find((x) => x.id === unitId) : undefined;
+
+            return {
+                cars: s.cars.map((c) => {
+                    if (c.id !== carId) return c;
+
+                    if (!u) {
+                        // rensa unit/overrides
+                        return {
+                            ...c,
+                            unitId: undefined,
+                            brakeOverrideP: undefined,
+                            brakeOverrideR: undefined,
+                            brakeOverrideEP: undefined,
+                            // tareOverrideT: undefined, // avkommentera om du vill rensa vikt också
+                        };
+                    }
+
+                    return {
+                        ...c,
+                        unitId: u.id,
+                        brakeOverrideP: u.brakeP,
+                        brakeOverrideR: u.brakeR,
+                        brakeOverrideEP: u.epBrake ?? 0,
+                        tareOverrideT: u.tareT ?? c.tareOverrideT,
+                    };
+                }),
+            };
+        }),
+
+    getCarBpmmzUnitLabel: (car) => {
+        if (car.wagonTypeId !== "bpmmz") return null;
+        const u = findBpmmzUnit(car.unitId);
+        return u?.label ?? null;
+    },
 }));
 
-// ---- Beräkningar ----
+/* =========================
+   Beräkningar
+========================= */
+
 export function calcTotals() {
     const { wagonTypes, locTypes, selectedLocId, locBrakeMode, cars } = useTrainStore.getState();
 
@@ -411,10 +542,10 @@ export function calcTotals() {
         if (car.brakeEnabled) {
             const b =
                 car.brakeMode === "P"
-                    ? w.brakeP
+                    ? (car.brakeOverrideP ?? w.brakeP)
                     : car.brakeMode === "R"
-                        ? w.brakeR
-                        : (w.epBrake ?? 0);
+                        ? (car.brakeOverrideR ?? w.brakeR)
+                        : (car.brakeOverrideEP ?? (w.epBrake ?? 0));
 
             totalBrakeT += b;
         }
@@ -441,7 +572,10 @@ export function calcTotals() {
 
 export type Totals = ReturnType<typeof calcTotals>;
 
-// ---- Plattform-hjälp ----
+/* =========================
+   Plattform-hjälp
+========================= */
+
 export function approxCarsToFit(overM: number): number {
     if (overM <= 0) return 0;
 
