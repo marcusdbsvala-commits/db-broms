@@ -32,7 +32,6 @@ export type BrakeMode = "P" | "R" | "EP";
 
 /* =========================
    Bpmmz individer
-   (fyller broms + vikt här)
 ========================= */
 
 export type BpmmzUnit = {
@@ -85,6 +84,60 @@ export type TrainCar = {
 };
 
 /* =========================
+   Presets (sparade tåg)
+========================= */
+
+export type TrainSnapshot = {
+    selectedLocId: string | null;
+    locBrakeMode: BrakeMode;
+    cars: TrainCar[];
+};
+
+export type TrainPreset = {
+    id: string;
+    name: string;
+    createdAt: number;
+    snapshot: TrainSnapshot;
+};
+
+const PRESETS_KEY = "broms_pwa_presets_v1";
+const LAST_KEY = "broms_pwa_last_train_v1";
+
+function safeJsonParse<T>(raw: string | null): T | null {
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw) as T;
+    } catch {
+        return null;
+    }
+}
+
+function loadPresetsFromStorage(): TrainPreset[] {
+    const parsed = safeJsonParse<TrainPreset[]>(localStorage.getItem(PRESETS_KEY));
+    return Array.isArray(parsed) ? parsed : [];
+}
+
+function savePresetsToStorage(presets: TrainPreset[]) {
+    try {
+        localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+    } catch {
+        // ignore
+    }
+}
+
+function loadLastFromStorage(): TrainSnapshot | null {
+    return safeJsonParse<TrainSnapshot>(localStorage.getItem(LAST_KEY));
+}
+
+function saveLastToStorage(snapshot: TrainSnapshot) {
+    try {
+        localStorage.setItem(LAST_KEY, JSON.stringify(snapshot));
+    } catch {
+        // ignore
+    }
+}
+
+/* =========================
    Store
 ========================= */
 
@@ -98,6 +151,9 @@ type State = {
 
     // Instanser av vagnar
     cars: TrainCar[];
+
+    // ✅ Presets
+    presets: TrainPreset[];
 
     // Lok
     setSelectedLoc: (locId: string | null) => void;
@@ -123,10 +179,30 @@ type State = {
     // ✅ Bpmmz
     getBpmmzUnits: () => BpmmzUnit[];
     setCarUnitId: (carId: string, unitId: string | null) => void;
-
-    // (Nice för UI)
     getCarBpmmzUnitLabel: (car: TrainCar) => string | null;
+
+    // ✅ Presets actions
+    savePreset: (name: string) => void;
+    loadPreset: (presetId: string) => void;
+    deletePreset: (presetId: string) => void;
+    renamePreset: (presetId: string, name: string) => void;
+    clearPresets: () => void;
 };
+
+function makeSnapshot(s: Pick<State, "selectedLocId" | "locBrakeMode" | "cars">): TrainSnapshot {
+    return {
+        selectedLocId: s.selectedLocId,
+        locBrakeMode: s.locBrakeMode,
+        cars: s.cars,
+    };
+}
+
+// hjälper oss autospara "senaste" efter stateändringar
+function persistLastFromState(s: Pick<State, "selectedLocId" | "locBrakeMode" | "cars">) {
+    saveLastToStorage(makeSnapshot(s));
+}
+
+const last = loadLastFromStorage();
 
 export const useTrainStore = create<State>((set, get) => ({
     wagonTypes: {
@@ -353,13 +429,28 @@ export const useTrainStore = create<State>((set, get) => ({
         },
     },
 
-    selectedLocId: null,
-    locBrakeMode: "EP",
+    // ✅ laddar "senaste tåget" om det finns
+    selectedLocId: last?.selectedLocId ?? null,
+    locBrakeMode: last?.locBrakeMode ?? "EP",
+    cars: last?.cars ?? [],
 
-    cars: [],
+    // ✅ presets
+    presets: loadPresetsFromStorage(),
 
-    setSelectedLoc: (locId) => set({ selectedLocId: locId }),
-    setLocBrakeMode: (mode) => set({ locBrakeMode: mode }),
+    setSelectedLoc: (locId) =>
+        set((s) => {
+            const next = { ...s, selectedLocId: locId };
+            persistLastFromState(next);
+            return { selectedLocId: locId };
+        }),
+
+    setLocBrakeMode: (mode) =>
+        set((s) => {
+            const next = { ...s, locBrakeMode: mode };
+            persistLastFromState(next);
+            return { locBrakeMode: mode };
+        }),
+
     getLocOptions: () => Object.values(get().locTypes),
 
     upsertWagonType: (w) =>
@@ -371,10 +462,10 @@ export const useTrainStore = create<State>((set, get) => ({
         set((s) => {
             const wt = { ...s.wagonTypes };
             delete wt[id];
-            return {
-                wagonTypes: wt,
-                cars: s.cars.filter((c) => c.wagonTypeId !== id),
-            };
+            const cars = s.cars.filter((c) => c.wagonTypeId !== id);
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { wagonTypes: wt, cars };
         }),
 
     addCar: (wagonTypeId) =>
@@ -390,24 +481,24 @@ export const useTrainStore = create<State>((set, get) => ({
             // ✅ Bpmmz: defaulta till första unit (smidigt för test)
             const defaultUnit = wagonTypeId === "bpmmz" ? BPMMZ_UNITS[0] : undefined;
 
-            return {
-                cars: [
-                    ...s.cars,
-                    {
-                        id: crypto.randomUUID(),
-                        wagonTypeId,
-                        brakeEnabled,
-                        brakeMode,
+            const newCar: TrainCar = {
+                id: crypto.randomUUID(),
+                wagonTypeId,
+                brakeEnabled,
+                brakeMode,
 
-                        tareOverrideT: defaultUnit?.tareT ?? tareOverrideT,
+                tareOverrideT: defaultUnit?.tareT ?? tareOverrideT,
 
-                        unitId: defaultUnit?.id,
-                        brakeOverrideP: defaultUnit?.brakeP,
-                        brakeOverrideR: defaultUnit?.brakeR,
-                        brakeOverrideEP: defaultUnit?.epBrake ?? (defaultUnit ? 0 : undefined),
-                    },
-                ],
+                unitId: defaultUnit?.id,
+                brakeOverrideP: defaultUnit?.brakeP,
+                brakeOverrideR: defaultUnit?.brakeR,
+                brakeOverrideEP: defaultUnit?.epBrake ?? (defaultUnit ? 0 : undefined),
             };
+
+            const cars = [...s.cars, newCar];
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { cars };
         }),
 
     removeCar: (wagonTypeId) =>
@@ -417,30 +508,44 @@ export const useTrainStore = create<State>((set, get) => ({
             const idx = s.cars.length - 1 - revIdx;
             const cars = [...s.cars];
             cars.splice(idx, 1);
+            const next = { ...s, cars };
+            persistLastFromState(next);
             return { cars };
         }),
 
     removeCarById: (carId) =>
-        set((s) => ({
-            cars: s.cars.filter((c) => c.id !== carId),
-        })),
+        set((s) => {
+            const cars = s.cars.filter((c) => c.id !== carId);
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { cars };
+        }),
 
     setCarBrakeMode: (carId, mode) =>
-        set((s) => ({
-            cars: s.cars.map((c) => (c.id === carId ? { ...c, brakeMode: mode } : c)),
-        })),
+        set((s) => {
+            const cars = s.cars.map((c) => (c.id === carId ? { ...c, brakeMode: mode } : c));
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { cars };
+        }),
 
     setCarBrakeEnabled: (carId, enabled) =>
-        set((s) => ({
-            cars: s.cars.map((c) => (c.id === carId ? { ...c, brakeEnabled: enabled } : c)),
-        })),
+        set((s) => {
+            const cars = s.cars.map((c) => (c.id === carId ? { ...c, brakeEnabled: enabled } : c));
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { cars };
+        }),
 
     setCarTareOverride: (carId, tareT) =>
-        set((s) => ({
-            cars: s.cars.map((c) =>
+        set((s) => {
+            const cars = s.cars.map((c) =>
                 c.id === carId ? { ...c, tareOverrideT: tareT === null ? undefined : tareT } : c
-            ),
-        })),
+            );
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { cars };
+        }),
 
     // ✅ Bpmmz
     getBpmmzUnits: () => BPMMZ_UNITS,
@@ -450,43 +555,43 @@ export const useTrainStore = create<State>((set, get) => ({
             const car = s.cars.find((c) => c.id === carId);
             if (!car) return s;
 
-            // Just nu gör vi bara “special logic” för Bpmmz
+            // special logic för Bpmmz
             if (car.wagonTypeId !== "bpmmz") {
-                return {
-                    cars: s.cars.map((c) =>
-                        c.id === carId ? { ...c, unitId: unitId ?? undefined } : c
-                    ),
-                };
+                const cars = s.cars.map((c) => (c.id === carId ? { ...c, unitId: unitId ?? undefined } : c));
+                const next = { ...s, cars };
+                persistLastFromState(next);
+                return { cars };
             }
 
             const u = unitId ? BPMMZ_UNITS.find((x) => x.id === unitId) : undefined;
 
-            return {
-                cars: s.cars.map((c) => {
-                    if (c.id !== carId) return c;
+            const cars = s.cars.map((c) => {
+                if (c.id !== carId) return c;
 
-                    if (!u) {
-                        // rensa unit/overrides
-                        return {
-                            ...c,
-                            unitId: undefined,
-                            brakeOverrideP: undefined,
-                            brakeOverrideR: undefined,
-                            brakeOverrideEP: undefined,
-                            // tareOverrideT: undefined, // avkommentera om du vill rensa vikt också
-                        };
-                    }
-
+                if (!u) {
                     return {
                         ...c,
-                        unitId: u.id,
-                        brakeOverrideP: u.brakeP,
-                        brakeOverrideR: u.brakeR,
-                        brakeOverrideEP: u.epBrake ?? 0,
-                        tareOverrideT: u.tareT ?? c.tareOverrideT,
+                        unitId: undefined,
+                        brakeOverrideP: undefined,
+                        brakeOverrideR: undefined,
+                        brakeOverrideEP: undefined,
+                        // tareOverrideT: undefined, // avkommentera om du vill rensa vikt också
                     };
-                }),
-            };
+                }
+
+                return {
+                    ...c,
+                    unitId: u.id,
+                    brakeOverrideP: u.brakeP,
+                    brakeOverrideR: u.brakeR,
+                    brakeOverrideEP: u.epBrake ?? 0,
+                    tareOverrideT: u.tareT ?? c.tareOverrideT,
+                };
+            });
+
+            const next = { ...s, cars };
+            persistLastFromState(next);
+            return { cars };
         }),
 
     getCarBpmmzUnitLabel: (car) => {
@@ -494,6 +599,57 @@ export const useTrainStore = create<State>((set, get) => ({
         const u = findBpmmzUnit(car.unitId);
         return u?.label ?? null;
     },
+
+    // ✅ Presets actions
+    savePreset: (name) =>
+        set((s) => {
+            const preset: TrainPreset = {
+                id: crypto.randomUUID(),
+                name: name.trim() || `Tåg ${new Date().toLocaleString("sv-SE")}`,
+                createdAt: Date.now(),
+                snapshot: makeSnapshot(s),
+            };
+
+            const presets = [preset, ...s.presets];
+            savePresetsToStorage(presets);
+            return { presets };
+        }),
+
+    loadPreset: (presetId) =>
+        set((s) => {
+            const p = s.presets.find((x) => x.id === presetId);
+            if (!p) return s;
+
+            const selectedLocId = p.snapshot.selectedLocId;
+            const locBrakeMode = p.snapshot.locBrakeMode;
+            const cars = p.snapshot.cars;
+
+            const next = { ...s, selectedLocId, locBrakeMode, cars };
+            persistLastFromState(next);
+
+            return { selectedLocId, locBrakeMode, cars };
+        }),
+
+    deletePreset: (presetId) =>
+        set((s) => {
+            const presets = s.presets.filter((p) => p.id !== presetId);
+            savePresetsToStorage(presets);
+            return { presets };
+        }),
+
+    renamePreset: (presetId, name) =>
+        set((s) => {
+            const n = name.trim();
+            const presets = s.presets.map((p) => (p.id === presetId && n ? { ...p, name: n } : p));
+            savePresetsToStorage(presets);
+            return { presets };
+        }),
+
+    clearPresets: () =>
+        set((s) => {
+            savePresetsToStorage([]);
+            return { presets: [] };
+        }),
 }));
 
 /* =========================

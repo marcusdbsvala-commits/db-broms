@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { calcTotals, useTrainStore, type BrakeMode } from "../store/TrainStore";
 import BrakeSummaryForm from "../ui/BrakeSummaryForm";
 
@@ -30,6 +31,14 @@ export default function Broms() {
     // ✅ Bpmmz
     const setCarUnitId = useTrainStore((s) => s.setCarUnitId);
     const getBpmmzUnits = useTrainStore((s) => s.getBpmmzUnits);
+
+    // ✅ Presets
+    const presets = useTrainStore((s) => s.presets);
+    const savePreset = useTrainStore((s) => s.savePreset);
+    const loadPreset = useTrainStore((s) => s.loadPreset);
+    const deletePreset = useTrainStore((s) => s.deletePreset);
+    const renamePreset = useTrainStore((s) => s.renamePreset);
+    const clearPresets = useTrainStore((s) => s.clearPresets);
 
     const totals = calcTotals();
     const bp = calcBrakePercentSelected(totals.totalBrakeT, totals.totalWeightT);
@@ -68,6 +77,14 @@ export default function Broms() {
     const locoIncluded = !!selectedLocId;
     const locoOptions = Object.values(locTypes);
 
+    // ✅ Presets UI state
+    const presetOptions = useMemo(
+        () =>
+            [...presets].sort((a, b) => b.createdAt - a.createdAt),
+        [presets]
+    );
+    const [selectedPresetId, setSelectedPresetId] = useState("");
+
     return (
         <div style={{ padding: 16 }}>
             <h2>Broms</h2>
@@ -91,6 +108,138 @@ export default function Broms() {
             {/* Bygg tåg */}
             <div style={{ marginTop: 16 }}>
                 <div style={{ fontWeight: 700, marginBottom: 8 }}>Bygg tåget</div>
+
+                {/* ✅ Sparade tåg */}
+                <div
+                    style={{
+                        padding: 8,
+                        border: "1px solid #000000",
+                        borderRadius: 12,
+                        marginBottom: 12,
+                    }}
+                >
+                    <div style={{ fontWeight: 800, marginBottom: 8 }}>Sparade tåg</div>
+
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <select
+                            value={selectedPresetId}
+                            onChange={(e) => setSelectedPresetId(e.target.value)}
+                            style={{ padding: "8px 10px", borderRadius: 10, border: "2px solid #000", fontWeight: 800 }}
+                        >
+                            <option value="">Välj sparat bygge…</option>
+                            {presetOptions.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name}
+                                </option>
+                            ))}
+                        </select>
+
+                        <button
+                            disabled={!selectedPresetId}
+                            onClick={() => loadPreset(selectedPresetId)}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Ladda
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const defaultName = `Tåg ${new Date().toLocaleString("sv-SE")}`;
+                                const name = prompt("Namn på tåget?", defaultName);
+                                if (name === null) return;
+                                savePreset(name);
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Spara
+                        </button>
+
+                        <button
+                            disabled={!selectedPresetId}
+                            onClick={() => {
+                                if (!selectedPresetId) return;
+                                const ok = confirm("Ta bort detta sparade bygge?");
+                                if (!ok) return;
+                                deletePreset(selectedPresetId);
+                                setSelectedPresetId("");
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Ta bort
+                        </button>
+
+                        <button
+                            disabled={!selectedPresetId}
+                            onClick={() => {
+                                if (!selectedPresetId) return;
+                                const current = presetOptions.find((p) => p.id === selectedPresetId);
+                                const name = prompt("Nytt namn?", current?.name ?? "");
+                                if (name === null) return;
+                                renamePreset(selectedPresetId, name);
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Byt namn
+                        </button>
+
+                        <button
+                            disabled={presetOptions.length === 0}
+                            onClick={() => {
+                                const ok = confirm("Rensa ALLA sparade tåg?");
+                                if (!ok) return;
+                                clearPresets();
+                                setSelectedPresetId("");
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                        >
+                            Rensa alla
+                        </button>
+                    </div>
+
+                    <div style={{ marginTop: 8, fontSize: 12, opacity: 0.75 }}>
+                        Sparas lokalt i mobilen (offline). Senaste tåget autosparas också.
+                    </div>
+                </div>
 
                 {/* Lok som val */}
                 <div
