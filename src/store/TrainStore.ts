@@ -219,6 +219,9 @@ type State = {
     // ✅ Export / Import
     exportPresetCode: (presetId: string) => string | null;
     importPresetCode: (code: string) => { ok: true; id: string } | { ok: false; error: string };
+
+    // ✅ NUKE / clear train
+    clearTrain: (opts?: { keepLoc?: boolean }) => void;
 };
 
 function makeSnapshot(s: Pick<State, "selectedLocId" | "locBrakeMode" | "cars">): TrainSnapshot {
@@ -711,6 +714,23 @@ export const useTrainStore = create<State>((set, get) => ({
             return { ok: false as const, error: "Kunde inte läsa koden. (Fel/trasig kod)" };
         }
     },
+
+    // ✅ NUKE / clear train
+    // keepLoc=false => rensar lok + vagnar (NUKE)
+    // keepLoc=true  => rensar bara vagnar, behåller lok + lokbromsläge (nytt bygge snabbt)
+    clearTrain: (opts) =>
+        set((s) => {
+            const keepLoc = opts?.keepLoc ?? false;
+
+            const selectedLocId = keepLoc ? s.selectedLocId : null;
+            const locBrakeMode = keepLoc ? s.locBrakeMode : "EP";
+            const cars: TrainCar[] = [];
+
+            const next = { ...s, selectedLocId, locBrakeMode, cars };
+            persistLastFromState(next);
+
+            return { selectedLocId, locBrakeMode, cars };
+        }),
 }));
 
 /* =========================

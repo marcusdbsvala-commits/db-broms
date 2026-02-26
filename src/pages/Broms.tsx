@@ -14,7 +14,6 @@ async function copyToClipboardOrPrompt(label: string, text: string) {
         await navigator.clipboard.writeText(text);
         alert(`${label} kopierad! Skicka den till kollegan.`);
     } catch {
-        // fallback om clipboard blockas (t.ex. i vissa webviews)
         prompt(`${label} (kopiera manuellt):`, text);
     }
 }
@@ -53,6 +52,9 @@ export default function Broms() {
     // ✅ Export / Import
     const exportPresetCode = useTrainStore((s) => s.exportPresetCode);
     const importPresetCode = useTrainStore((s) => s.importPresetCode);
+
+    // ✅ Rensa tåg (NUKE)
+    const clearTrain = useTrainStore((s) => s.clearTrain);
 
     const totals = calcTotals();
     const bp = calcBrakePercentSelected(totals.totalBrakeT, totals.totalWeightT);
@@ -252,7 +254,6 @@ export default function Broms() {
                                 if (!selectedPresetId) return;
                                 const code = exportPresetCode(selectedPresetId);
                                 if (!code) return alert("Hittar inte presetet.");
-
                                 await copyToClipboardOrPrompt("Exportkod", code);
                             }}
                             style={{
@@ -280,7 +281,6 @@ export default function Broms() {
                                     return;
                                 }
 
-                                // välj den importerade direkt i dropdown
                                 setSelectedPresetId(res.id);
                                 alert("Importerat! Presetet ligger nu under sparade tåg.");
                             }}
@@ -296,6 +296,28 @@ export default function Broms() {
                             title="Importera kod från kollega"
                         >
                             Import
+                        </button>
+
+                        {/* 💣 NUKE: rensa lok + vagnar */}
+                        <button
+                            onClick={() => {
+                                const ok = confirm("NUKE: Rensa lok + alla vagnar? (preset-listan påverkas inte)");
+                                if (!ok) return;
+                                clearTrain({ keepLoc: false });
+                                setSelectedPresetId("");
+                            }}
+                            style={{
+                                background: "var(--bg)",
+                                border: "2px solid #000000",
+                                color: "var(--text)",
+                                borderRadius: 10,
+                                padding: "8px 12px",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                            }}
+                            title="Rensar nuvarande bygge helt"
+                        >
+                            Nollställ sida
                         </button>
                     </div>
 
