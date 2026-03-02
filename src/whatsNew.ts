@@ -1,5 +1,5 @@
-export const WHATS_NEW_VERSION = "2026-02-26";
+export const WHATS_NEW_VERSION = "2026-03-02";
 
 export const WHATS_NEW = [
-    "Inget speciellt",
+    "Eco mode och tips & trix under LOK",
 ];

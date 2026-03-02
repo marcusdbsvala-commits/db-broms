@@ -16,6 +16,9 @@ import p11 from "../assets/lokpdf/11.pdf?url";
 import p12 from "../assets/lokpdf/12.pdf?url";
 import p13 from "../assets/lokpdf/13.pdf?url";
 import p14 from "../assets/lokpdf/14.pdf?url";
+import p15 from "../assets/lokpdf/15.pdf?url";
+import p16 from "../assets/lokpdf/16.pdf?url";
+import p17 from "../assets/lokpdf/17.pdf?url";
 
 type DocItem = {
     id: string;
@@ -41,6 +44,9 @@ export default function Lok() {
             { id: "p12", label: "12 ATC2_L10000", src: p12, kind: "pdf" },
             { id: "p13", label: "13 Jordning av lok", src: p13, kind: "pdf" },
             { id: "p14", label: "14 Felsökning", src: p14, kind: "pdf" },
+            { id: "p15", label: "15 ECO Mode B06", src: p15, kind: "pdf" },
+            { id: "p16", label: "16 ECO Mode B18", src: p16, kind: "pdf" },
+            { id: "p17", label: "17 Tips & Trix", src: p17, kind: "pdf" },
         ],
         []
     );
